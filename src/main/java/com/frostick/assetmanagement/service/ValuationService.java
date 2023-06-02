@@ -1,31 +1,41 @@
 package com.frostick.assetmanagement.service;
 
 import com.frostick.assetmanagement.data.asset.impl.AssetImpl;
+import com.frostick.assetmanagement.data.valuation.impl.ValuationImpl;
+import com.frostick.assetmanagement.data.valuation.impl.ValuationStatsImpl;
 import com.frostick.assetmanagement.repository.AssetRepository;
+import com.frostick.assetmanagement.repository.ValuationRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.lang.String.format;
 
 /**
- * Service for Assets
+ * Service for Valuations
  */
-@Service("assetService")
-public class AssetService {
+@Service("valuationService")
+@RequiredArgsConstructor
+public class ValuationService {
 
     /**
-     * Repository of Asset records.
+     * Repository of Valuation records.
      */
-    @Autowired
-    private AssetRepository assetRepository;
+    private final ValuationRepository valuationRepository;
 
     /**
-     * Get all the Asset records.
+     * Get all the Valuation records.
      * @return a list of all records
      */
-    public List<AssetImpl> getAll() {
-        return assetRepository.findAll();
+    public List<ValuationImpl> getAll() {
+        return valuationRepository.findAll();
     }
 
     /**
@@ -33,52 +43,49 @@ public class AssetService {
      * @param id the id
      * @return the record
      */
-    public Optional<AssetImpl> getById(int id) {
-        return assetRepository.findById(id);
+    public Optional<ValuationImpl> getById(int id) {
+        return valuationRepository.findById(id);
     }
 
     /**
-     * Save the asset passed in.
-     * @param asset the asset
-     * @return the asset saved
+     * Save the valuation passed in.
+     * @param valuation the valuation
+     * @return the valuation saved
      */
-    public AssetImpl saveAsset(AssetImpl asset) {
-        return assetRepository.save(asset);
+    public ValuationImpl saveValuation(ValuationImpl valuation) {
+        return valuationRepository.save(valuation);
     }
 
     /**
-     * Save the asset passed in.
-     * @param id asset number
-     * @param asset the asset
-     * @return the asset saved
+     * Save the valuation passed in.
+     * @param id valuation number
+     * @param valuation the valuation
+     * @return the valuation saved
      */
-    public AssetImpl updateAsset(int id, AssetImpl asset) {
-        Optional<AssetImpl> optional = getById(id);
-        if (optional.isPresent()) {
-            AssetImpl assetStored = optional.get();
-            if (asset.getName() != null) {
-                assetStored.setName(asset.getName());
-            }
-            if (asset.getDescription() != null) {
-                assetStored.setDescription(asset.getDescription());
-            }
-            if (asset.getType() != null) {
-                assetStored.setType(asset.getType());
-            }
-            assetStored.setModifiedBy(asset.getModifiedBy());
-            return assetRepository.save(assetStored);
-        } else {
-            return null;
-        }
+    public ValuationImpl updateValuation(int id, ValuationImpl valuation) {
+        Optional<ValuationImpl> optional = getById(id);
+        return optional.map(record -> {
+                    record.setDate(valuation.getDate());
+                    record.setValue(valuation.getValue());
+                    return valuationRepository.save(record);
+                }
+        ).orElseThrow(
+                () -> new ResourceNotFoundException(format("Valuation not found with id: [%s]", id))
+        );
     }
 
     /**
-     * Delete the asset with the passed id.
+     * Delete the valuation with the passed id.
      * @param id id
      * @return true if successful
      */
-    public boolean deleteAsset(int id) {
-        assetRepository.deleteById(id);
+    public boolean deleteValuation(int id) {
+        valuationRepository.deleteById(id);
         return true;
     }
+
+    public List<ValuationImpl> getTop30AssetValuations(AssetImpl asset) {
+        return valuationRepository.findTop30ByAssetOrderByDateDesc(asset);
+    }
+
 }
